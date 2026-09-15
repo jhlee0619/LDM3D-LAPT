@@ -1,0 +1,25 @@
+# Python 3.9
+# Versions below are the ones the released experiments actually ran on.
+# Install PyTorch first, matched to your CUDA build, e.g.
+#   pip install torch==2.5.1 torchvision==0.20.1 --index-url https://download.pytorch.org/whl/cu124
+
+torch==2.5.1
+torchvision==0.20.1
+pytorch-lightning==1.9.5
+torchmetrics==1.6.0
+tensorboard==2.19.0    # local-only logger; no run data leaves the machine
+
+numpy==1.26.4          # monai 1.3.2 breaks on numpy>=2 (set_random_state overflow)
+scipy==1.13.1
+omegaconf==2.3.0
+einops==0.8.0
+
+monai==1.3.2
+nibabel==5.3.2
+antspyx==0.4.2         # provides `ants`, used for NIfTI I/O in the dataset classes
+
+tqdm
+pandas==2.3.3
+matplotlib==3.9.1
+Pillow
+packaging

@@ -1,0 +1,18 @@
+# Overlay: drop the learned volumetric conditioner.
+#
+#   python train.py --base configs/latent-diffusion/ldm_3d.yaml \
+#                          configs/latent-diffusion/nocond.yaml -t ...
+#
+# Both paths go after a single --base (repeating the flag replaces the first
+# list rather than appending), and a flag such as -t must follow them so the
+# overrides that come after are not swallowed. Bases are merged left to right. OmegaConf merges dicts recursively and cannot
+# delete a key, so the two VolumeConditioner-only parameters are set to null;
+# instantiate_from_config drops null params before calling the class.
+model:
+  params:
+    cond_stage_trainable: false
+    cond_stage_config:
+      target: ldm3d_lapt.modules.encoders.SpatialRescaler
+      params:
+        model_channels: null
+        temporal_length: null

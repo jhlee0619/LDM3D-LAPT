@@ -1,0 +1,48 @@
+model:
+  base_learning_rate: 4.5e-6
+  target: ldm3d_lapt.models.segmentation.SegmentationModel3D
+  params:
+    image_key: 'mri'
+    monitor: "val/miou"
+    num_classes: 1
+    
+    ddconfig:
+      resolution: 224
+      in_channels: 2
+      out_ch: 1
+      ch: 64
+      ch_mult: [ 1,2,4 ]  # num_down = len(ch_mult)-1
+      num_res_blocks: 2
+      attn_resolutions: [16]
+      dropout: 0.0
+      use_timestep: False
+
+
+data:
+  target: train.DataModuleFromConfig
+  params:
+    batch_size: 4
+    num_workers: 8
+    wrap: True
+    train:
+      target: ldm3d_lapt.data.volumes.SegVolumeTrain
+      params:
+        dataroot: /path/to/data
+        bigaug: True
+    validation:
+      target: ldm3d_lapt.data.volumes.SegVolumeTest
+      params:
+        dataroot: /path/to/data
+        bigaug: True
+
+lightning:
+  callbacks:
+    image_logger:
+      target: train.ImageLogger
+      params:
+        increase_log_steps: True
+
+  trainer:
+    benchmark: True
+    accumulate_grad_batches: 2
+    max_epochs: 2000

@@ -1,0 +1,32 @@
+# experiment output
+logs/
+lightning_logs/
+outputs/
+results/
+
+# model weights — never commit
+checkpoints/
+*.ckpt
+*.pth
+*.pt
+
+# imaging data — never commit
+*.nii
+*.nii.gz
+*.dcm
+*.npy
+*.npz
+
+# python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.ipynb_checkpoints/
+.venv/
+venv/
+
+# tooling / editor
+.omc/
+.vscode/
+.idea/
+.DS_Store

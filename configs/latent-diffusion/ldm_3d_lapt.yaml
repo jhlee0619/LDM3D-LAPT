@@ -1,0 +1,124 @@
+model:
+  base_learning_rate: 2.0e-06
+  target: ldm3d_lapt.models.ddpm_volume_lapt.LatentDiffusionVolumeLAPT
+  params:
+    ckpt_path: 'checkpoints/ldm_3d.ckpt'
+    load_only_unet: True
+    linear_start: 0.0015
+    linear_end: 0.0195
+    num_timesteps_cond: 1
+    log_every_t: 200
+    timesteps: 1000
+    first_stage_key: mri
+    cond_stage_key: ctp
+    cond_stage_trainable: true
+    image_size: [48, 56]
+    channels: 3
+    monitor:
+      - val/loss_simple_ema
+      - val/loss_image_ema
+    use_ema: true
+    img_loss_weight: 0.01
+    lesion_loss_weight: 0.0001
+    seg_loss_weight: 0.001
+    consecutive_slices: 8
+
+    unet_config:
+      target: ldm3d_lapt.modules.unet_volume.UNetModel
+      params:
+        image_size: 64
+        in_channels: 18
+        out_channels: 3
+        model_channels: 224
+        attention_resolutions:
+        # note: this isn\t actually the resolution but
+        # the downsampling factor, i.e. this corresnponds to
+        # attention on spatial resolution 8,16,32, as the
+        # spatial reolution of the latents is 64 for f4
+        - 8
+        - 4
+        - 2
+        num_res_blocks: 2
+        channel_mult:
+        - 1
+        - 4
+        - 8
+        num_head_channels: 32
+        temporal_length: 32
+    first_stage_config:
+      target: ldm3d_lapt.models.autoencoder.VQModelInterface
+      params:
+        embed_dim: 3
+        n_embed: 8192
+        modality_separate: True
+        ckpt_path: 'checkpoints/autoencoder.ckpt'
+        ddconfig:
+          double_z: false
+          z_channels: 3
+          resolution: 224
+          in_channels: 2
+          out_ch: 2
+          ch: 128
+          ch_mult:
+          - 1
+          - 2
+          - 4
+          num_res_blocks: 2
+          attn_resolutions: [16]
+          dropout: 0.0
+        lossconfig:
+          target: torch.nn.Identity
+    cond_stage_config:
+      target: ldm3d_lapt.modules.conditioners_3d.VolumeConditioner
+      params:
+        n_stages: 2
+        in_channels: 15
+        model_channels: 32
+        out_channels: 15
+        temporal_length: 32
+    segmentation_model_config:
+      target: ldm3d_lapt.models.segmentation.SegmentationGuide3D
+      params:
+        ckpt_path: 'checkpoints/segmentation_3d.ckpt'
+        num_classes: 1
+        ddconfig:
+          resolution: 224
+          in_channels: 2
+          out_ch: 1
+          ch: 64
+          ch_mult: [ 1,2,4 ]  # num_down = len(ch_mult)-1
+          num_res_blocks: 2
+          attn_resolutions: [16]
+          dropout: 0.0
+          use_timestep: False
+
+data:
+  target: train.DataModuleFromConfig
+  params:
+    batch_size: 1
+    num_workers: 5
+    wrap: false
+    train:
+      target: ldm3d_lapt.data.paired_volumes.PairedVolumeTrain
+      params:
+        dataroot: /path/to/data
+    validation:
+      target: ldm3d_lapt.data.paired_volumes.PairedVolumeTest
+      params:
+        dataroot: /path/to/data
+        slice_idx: 1
+
+
+lightning:
+  callbacks:
+    image_logger:
+      target: train.ImageLogger
+      params:
+        batch_frequency: 5000
+        max_images: 8
+        increase_log_steps: False
+
+  trainer:
+    max_epochs: 200
+    accumulate_grad_batches: 8
+    benchmark: True
